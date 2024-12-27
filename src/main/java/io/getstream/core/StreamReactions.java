@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.getstream.core.utils.Request.*;
 import static io.getstream.core.utils.Routes.buildReactionsURL;
+import static io.getstream.core.utils.Routes.buildGetReactionsBatchURL;
 import static io.getstream.core.utils.Serialization.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -12,10 +13,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import io.getstream.core.exceptions.StreamException;
 import io.getstream.core.http.HTTPClient;
+import io.getstream.core.http.Request;
 import io.getstream.core.http.Token;
 import io.getstream.core.models.FeedID;
 import io.getstream.core.models.Paginated;
 import io.getstream.core.models.Reaction;
+import io.getstream.core.models.ReactionBatch;
 import io.getstream.core.options.CustomQueryParameter;
 import io.getstream.core.options.Filter;
 import io.getstream.core.options.Limit;
@@ -86,6 +89,19 @@ public final class StreamReactions {
   public CompletableFuture<List<Reaction>> filter(
       Token token, LookupKind lookup, String id, Filter filter, Limit limit, String kind)
       throws StreamException {
+    return filter(token, lookup, id, filter, limit, kind, null, "");
+  }
+
+  public CompletableFuture<List<Reaction>> filter(
+          Token token,
+          LookupKind lookup,
+          String id,
+          Filter filter,
+          Limit limit,
+          String kind,
+          Boolean withOwnChildren,
+          String filterUserId)
+      throws StreamException {
     checkNotNull(lookup, "Lookup kind can't be null");
     checkNotNull(id, "Reaction ID can't be null");
     checkArgument(!id.isEmpty(), "Reaction ID can't be empty");
@@ -97,8 +113,15 @@ public final class StreamReactions {
       RequestOption withActivityData =
           new CustomQueryParameter(
               "with_activity_data", Boolean.toString(lookup == LookupKind.ACTIVITY_WITH_DATA));
+      RequestOption ownChildren =
+          new CustomQueryParameter(
+              "withOwnChildren", Boolean.toString(withOwnChildren != null && withOwnChildren));
+      RequestOption filterByUser =
+          new CustomQueryParameter(
+              "filter_user_id", filterUserId);
+
       return httpClient
-          .execute(buildGet(url, key, token, filter, limit, withActivityData))
+          .execute(buildGet(url, key, token, filter, limit, withActivityData, ownChildren, filterByUser))
           .thenApply(
               response -> {
                 try {
@@ -115,6 +138,18 @@ public final class StreamReactions {
   public CompletableFuture<Paginated<Reaction>> paginatedFilter(
       Token token, LookupKind lookup, String id, Filter filter, Limit limit, String kind)
       throws StreamException {
+    return paginatedFilter(token, lookup, id, filter, limit, kind, null);
+  }
+
+  public CompletableFuture<Paginated<Reaction>> paginatedFilter(
+      Token token,
+      LookupKind lookup,
+      String id,
+      Filter filter,
+      Limit limit,
+      String kind,
+      Boolean withOwnChildren)
+      throws StreamException {
     checkNotNull(lookup, "Lookup kind can't be null");
     checkNotNull(id, "Reaction ID can't be null");
     checkArgument(!id.isEmpty(), "Reaction ID can't be empty");
@@ -126,8 +161,12 @@ public final class StreamReactions {
       RequestOption withActivityData =
           new CustomQueryParameter(
               "with_activity_data", Boolean.toString(lookup == LookupKind.ACTIVITY_WITH_DATA));
+      RequestOption ownChildren =
+          new CustomQueryParameter(
+              "withOwnChildren", Boolean.toString(withOwnChildren != null && withOwnChildren));
+
       return httpClient
-          .execute(buildGet(url, key, token, filter, limit, withActivityData))
+          .execute(buildGet(url, key, token, filter, limit, withActivityData, ownChildren))
           .thenApply(
               response -> {
                 try {
@@ -203,6 +242,9 @@ public final class StreamReactions {
       if (reaction.getExtra() != null) {
         payloadBuilder.put("data", reaction.getExtra());
       }
+      if (reaction.getModerationTemplate() != null) {
+        payloadBuilder.put("moderation_template", reaction.getModerationTemplate());
+      }
       final byte[] payload = toJSON(payloadBuilder.build());
       final URL url = buildReactionsURL(baseURL);
       return httpClient
@@ -252,14 +294,21 @@ public final class StreamReactions {
     }
   }
 
-  public CompletableFuture<Void> delete(Token token, String id) throws StreamException {
+  public CompletableFuture<Void> delete(Token token, String id, Boolean soft)
+      throws StreamException {
     checkNotNull(id, "Reaction id can't be null");
     checkArgument(!id.isEmpty(), "Reaction id can't be empty");
 
     try {
       final URL url = buildReactionsURL(baseURL, id + '/');
+
+      final Request deleteRequest =
+          soft
+              ? buildDelete(url, key, token, new CustomQueryParameter("soft", "true"))
+              : buildDelete(url, key, token);
+
       return httpClient
-          .execute(buildDelete(url, key, token))
+          .execute(deleteRequest)
           .thenApply(
               response -> {
                 try {
@@ -268,6 +317,53 @@ public final class StreamReactions {
                   throw new CompletionException(e);
                 }
               });
+    } catch (MalformedURLException | URISyntaxException e) {
+      throw new StreamException(e);
+    }
+  }
+
+  public CompletableFuture<Void> restore(Token token, String id) throws StreamException {
+    checkNotNull(id, "Reaction id can't be null");
+    checkArgument(!id.isEmpty(), "Reaction id can't be empty");
+
+    try {
+      final URL url = buildReactionsURL(baseURL, id + "/restore/");
+      byte[] payload = new byte[0];
+      return httpClient
+          .execute(buildPut(url, key, token, payload))
+          .thenApply(
+              response -> {
+                try {
+                  return deserializeError(response);
+                } catch (StreamException | IOException e) {
+                  throw new CompletionException(e);
+                }
+              });
+    } catch (MalformedURLException | URISyntaxException e) {
+      throw new StreamException(e);
+    }
+  }
+
+  public CompletableFuture<ReactionBatch> getBatchReactions(Token token, List<String> ids) throws StreamException {
+    checkNotNull(ids, "Reaction IDs can't be null");
+    checkArgument(!ids.isEmpty(), "Reaction IDs can't be empty");
+
+    try {
+      final URL url = buildGetReactionsBatchURL(baseURL);
+      RequestOption optionIds =
+              new CustomQueryParameter(
+                      "ids", String.join(",", ids));
+
+      return httpClient
+              .execute(buildGet(url, key, token, optionIds))
+              .thenApply(
+                      response -> {
+                        try {
+                          return deserialize(response, ReactionBatch.class);
+                        } catch (StreamException | IOException e) {
+                          throw new CompletionException(e);
+                        }
+                      });
     } catch (MalformedURLException | URISyntaxException e) {
       throw new StreamException(e);
     }

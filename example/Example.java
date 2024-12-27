@@ -221,12 +221,26 @@ class Example {
         // playerFeed.addActivity(activity);
         userFeed.addActivity(activity);
 
+        // Get activities sorted by the ranking method along with externalRankingVars
+        Map<String, Object> mp=new LinkedHashMap();
+
+        mp.put("boolVal",true);
+        mp.put("music",1);
+        mp.put("sports",2.1);
+        mp.put("string","str");
+        response = userFeed.feed.getActivities(
+                new Limit(69),
+                new Offset(13),
+                DefaultOptions.DEFAULT_FILTER,
+                "rank",
+                new RankingVars(mp)
+        );
         /* -------------------------------------------------------- */
 
         // Batch following many feeds
         // Let timeline:1 will follow user:1, user:2 and user:3
         FollowRelation[] follows = new FollowRelation[] { new FollowRelation("timeline:1", "user:1"),
-                new FollowRelation("timeline:3", "user:2"), new FollowRelation("timeline:1", "user:3") };
+                new FollowRelation("timeline:1", "user:2"), new FollowRelation("timeline:1", "user:3") };
         client.batch().followMany(follows);
         // copy only the last 10 activities from every feed
         client.batch().followMany(10, follows);

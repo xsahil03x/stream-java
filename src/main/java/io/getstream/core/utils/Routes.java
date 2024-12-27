@@ -18,13 +18,20 @@ public final class Routes {
   private static final String addToManyPath = "feed/add_to_many/";
   private static final String followManyPath = "follow_many/";
   private static final String unfollowManyPath = "unfollow_many/";
+  private static final String moderationFlagPath = "moderation/flag/";
   private static final String collectionsPath = "collections/";
   private static final String filesPath = "files/";
   private static final String imagesPath = "images/";
   private static final String openGraphPath = "og/";
   private static final String reactionsPath = "reaction/";
+  private static final String reactionsBatchPath = "reaction/get_many/";
   private static final String toTargetUpdatePath = "/activity_to_targets/";
   private static final String usersPath = "user/";
+  private static final String followStatsPath = "stats/follow/";
+
+  private static final String exportIDsPath = "data_privacy/export_ids/";
+  private static final String deleteActivitiesPath = "data_privacy/delete_activities/";
+  private static final String deleteReactionsPath = "data_privacy/delete_reactions/";
 
   private Routes() {
     /* nothing to see here */
@@ -63,6 +70,10 @@ public final class Routes {
   public static URL buildReactionsURL(URL baseURL, String path) throws MalformedURLException {
     return new URL(baseURL, basePath + reactionsPath + path);
   }
+
+ public static URL buildGetReactionsBatchURL(URL baseURL) throws MalformedURLException {
+  return new URL(baseURL, basePath + reactionsBatchPath);
+}
 
   public static URL buildUsersURL(URL baseURL) throws MalformedURLException {
     return new URL(baseURL, basePath + usersPath);
@@ -110,6 +121,26 @@ public final class Routes {
 
   public static URL buildUnfollowManyURL(URL baseURL) throws MalformedURLException {
     return new URL(baseURL, basePath + unfollowManyPath);
+  }
+
+  public static URL buildModerationFlagURL(URL baseURL) throws MalformedURLException {
+    return new URL(baseURL, basePath + moderationFlagPath);
+  }
+
+  public static URL buildExportIDsURL(URL baseURL, String userID) throws MalformedURLException {
+    return new URL(baseURL, basePath + exportIDsPath+userID);
+  }
+
+  public static URL deleteActivitiesURL(URL baseURL) throws MalformedURLException {
+    return new URL(baseURL, basePath + deleteActivitiesPath);
+  }
+
+  public static URL deleteReactionsURL(URL baseURL) throws MalformedURLException {
+    return new URL(baseURL, basePath + deleteReactionsPath);
+  }
+
+  public static URL followStatsPath(URL baseURL) throws MalformedURLException {
+    return new URL(baseURL, basePath + followStatsPath);
   }
 
   private static URL buildSubdomainPath(URL baseURL, String subdomain, String apiPath, String path)

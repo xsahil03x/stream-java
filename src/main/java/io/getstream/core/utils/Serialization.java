@@ -53,6 +53,16 @@ public final class Serialization {
     return mapper.readValue(mapper.treeAsTokens(tree), type);
   }
 
+  public static <T> T fromJSON(String json, Class<T> type) throws IOException {
+    return mapper.readValue(json, type);
+  }
+
+  public static <T> List<T> fromJSONList(String json, Class<T> type) throws IOException {
+    final CollectionType collection =
+        mapper.getTypeFactory().constructCollectionType(List.class, type);
+    return mapper.readValue(json, collection);
+  }
+
   public static <T, U> T convert(U obj, Class<T> type) {
     return mapper.convertValue(obj, type);
   }
@@ -85,6 +95,16 @@ public final class Serialization {
           mapper.getTypeFactory().constructCollectionType(List.class, element);
       return fromJSON(
           response.getBody(), wrapper, mapper.getTypeFactory().constructType(collection));
+    }
+
+    throw deserializeException(response);
+  }
+
+  public static <T> T deserializeContainerSingleItem(Response response, Class<T> element)
+      throws IOException, StreamException {
+    if (normalResponseCodes.contains(response.getCode())) {
+      return fromJSON(
+          response.getBody(), "results", mapper.getTypeFactory().constructType(element));
     }
 
     throw deserializeException(response);

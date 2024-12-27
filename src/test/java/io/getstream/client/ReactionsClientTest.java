@@ -1,12 +1,18 @@
 package io.getstream.client;
 
 import io.getstream.core.LookupKind;
-import io.getstream.core.models.Activity;
-import io.getstream.core.models.FeedID;
-import io.getstream.core.models.Paginated;
-import io.getstream.core.models.Reaction;
+import io.getstream.core.models.*;
+
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import io.getstream.core.options.Filter;
+import io.getstream.core.options.Limit;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class ReactionsClientTest {
   private static final String apiKey =
@@ -47,6 +53,69 @@ public class ReactionsClientTest {
             .reactions()
             .filter(LookupKind.ACTIVITY_WITH_DATA, activity.getID(), "comment")
             .join();
+  }
+
+  @Test
+  public void filterWithUserID() throws Exception {
+    Client client = Client.builder(apiKey, secret).build();
+
+    Activity activity =
+        client
+            .flatFeed("flat", "reactor")
+            .addActivity(Activity.builder().actor("this").verb("done").object("that").build())
+            .join();
+
+    client.reactions().add("user1", "like", activity.getID()).join();
+    client.reactions().add("user1", "comment", activity.getID()).join();
+    client.reactions().add("user1", "share", activity.getID()).join();
+    client.reactions().add("user2", "like", activity.getID()).join();
+    client.reactions().add("user2", "comment", activity.getID()).join();
+    client.reactions().add("user3", "comment", activity.getID()).join();
+
+    List<Reaction> result = client.reactions().filter(LookupKind.ACTIVITY, activity.getID(), new Filter(), new Limit(10), "",false,  "user1").join();
+    assertEquals(3, result.size());
+
+    result = client.reactions().filter(LookupKind.ACTIVITY, activity.getID(), new Filter(), new Limit(10), "like",false, "user1").join();
+    assertEquals(1, result.size());
+
+
+    result = client.reactions().filter(LookupKind.ACTIVITY, activity.getID(), new Filter(), new Limit(10), "",false, "user2").join();
+    assertEquals(2, result.size());
+
+    result = client.reactions().filter(LookupKind.ACTIVITY, activity.getID(), new Filter(), new Limit(10), "",false, "user3").join();
+    assertEquals(1, result.size());
+  }
+
+  @Test
+  public void batchFetchReactions() throws Exception {
+    Client client = Client.builder(apiKey, secret).build();
+
+    Activity activity =
+        client
+            .flatFeed("flat", "reactor")
+            .addActivity(Activity.builder().actor("this").verb("done").object("that").build())
+            .join();
+
+    Reaction r1=client.reactions().add("user1", "like", activity.getID()).join();
+    Reaction r2=client.reactions().add("user1", "comment", activity.getID()).join();
+    Reaction r3=client.reactions().add("user1", "share", activity.getID()).join();
+    Reaction r4=client.reactions().add("user2", "like", activity.getID()).join();
+    Reaction r5=client.reactions().add("user2", "comment", activity.getID()).join();
+    Reaction r6=client.reactions().add("user3", "comment", activity.getID()).join();
+
+    Map<String, Reaction> reactionsRequest = Map.of(r1.getId(), r1, r2.getId(), r2, r3.getId(), r3, r4.getId(), r4, r5.getId(), r5, r6.getId(), r6);
+
+    ReactionBatch response = client.reactions().getBatch(List.of(r1.getId(), r2.getId(), r3.getId(), r4.getId(), r5.getId(), r6.getId())).join();
+    List<Reaction> result = response.getReactions();
+
+    //convert result to map and compare each id and type mapping from reactionsRequest to result
+    Map<String, Reaction> resultMap = result.stream().collect(Collectors.toMap(Reaction::getId, Function.identity()));
+    assertEquals(6, resultMap.size());
+    for (Reaction r : result) {
+      Reaction req = reactionsRequest.get(r.getId());
+      assertEquals(req.getActivityID(), r.getActivityID());
+      assertEquals(req.getKind(), r.getKind());
+    }
   }
 
   @Test
@@ -113,5 +182,16 @@ public class ReactionsClientTest {
         Reaction.builder().activityID("ed2837a6-0a3b-4679-adc1-778a1704852d").kind("like").build();
     Reaction reply = client.reactions().add("user-id", data, new FeedID("flat", "1")).join();
     client.reactions().delete(reply.getId()).join();
+  }
+
+  @Test
+  public void softDelete() throws Exception {
+    Client client = Client.builder(apiKey, secret).build();
+
+    Reaction data =
+        Reaction.builder().activityID("ed2837a6-0a3b-4679-adc1-778a1704852d").kind("like").build();
+    Reaction reply = client.reactions().add("user-id", data, new FeedID("flat", "1")).join();
+    client.reactions().softDelete(reply.getId()).join();
+    client.reactions().restore(reply.getId()).join();
   }
 }

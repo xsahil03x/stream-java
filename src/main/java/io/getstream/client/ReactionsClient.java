@@ -12,6 +12,7 @@ import io.getstream.core.http.Token;
 import io.getstream.core.models.FeedID;
 import io.getstream.core.models.Paginated;
 import io.getstream.core.models.Reaction;
+import io.getstream.core.models.ReactionBatch;
 import io.getstream.core.options.Filter;
 import io.getstream.core.options.Limit;
 import io.getstream.core.utils.Auth.TokenAction;
@@ -33,9 +34,21 @@ public final class ReactionsClient {
     return reactions.get(token, id);
   }
 
+  public CompletableFuture<ReactionBatch> getBatch(List<String> ids) throws StreamException {
+      final Token token = buildReactionsToken(secret, TokenAction.READ);
+      return reactions.getBatchReactions(token, ids);
+    }
+
   public CompletableFuture<List<Reaction>> filter(LookupKind lookup, String id)
       throws StreamException {
     return filter(lookup, id, DefaultOptions.DEFAULT_FILTER, DefaultOptions.DEFAULT_LIMIT, "");
+  }
+
+  public CompletableFuture<List<Reaction>> filter(
+          LookupKind lookup, String id, Filter filter, Limit limit, String kind, Boolean withOwnChildren, String filterUserID)
+          throws StreamException {
+    final Token token = buildReactionsToken(secret, TokenAction.READ);
+    return reactions.filter(token, lookup, id, filter, limit, kind, withOwnChildren, filterUserID);
   }
 
   public CompletableFuture<List<Reaction>> filter(LookupKind lookup, String id, Limit limit)
@@ -70,43 +83,50 @@ public final class ReactionsClient {
     return reactions.filter(token, lookup, id, filter, limit, kind);
   }
 
+  public CompletableFuture<List<Reaction>> filter(
+      LookupKind lookup, String id, Filter filter, Limit limit, String kind, Boolean withOwnChildren)
+      throws StreamException {
+    final Token token = buildReactionsToken(secret, TokenAction.READ);
+    return reactions.filter(token, lookup, id, filter, limit, kind, withOwnChildren, "");
+  }
+
   public CompletableFuture<Paginated<Reaction>> paginatedFilter(LookupKind lookup, String id)
       throws StreamException {
     return paginatedFilter(
-        lookup, id, DefaultOptions.DEFAULT_FILTER, DefaultOptions.DEFAULT_LIMIT, "");
+        lookup, id, DefaultOptions.DEFAULT_FILTER, DefaultOptions.DEFAULT_LIMIT, "", false);
   }
 
   public CompletableFuture<Paginated<Reaction>> paginatedFilter(
       LookupKind lookup, String id, Limit limit) throws StreamException {
-    return paginatedFilter(lookup, id, DefaultOptions.DEFAULT_FILTER, limit, "");
+    return paginatedFilter(lookup, id, DefaultOptions.DEFAULT_FILTER, limit, "", false);
   }
 
   public CompletableFuture<Paginated<Reaction>> paginatedFilter(
       LookupKind lookup, String id, Filter filter) throws StreamException {
-    return paginatedFilter(lookup, id, filter, DefaultOptions.DEFAULT_LIMIT, "");
+    return paginatedFilter(lookup, id, filter, DefaultOptions.DEFAULT_LIMIT, "", false);
   }
 
   public CompletableFuture<Paginated<Reaction>> paginatedFilter(
       LookupKind lookup, String id, String kind) throws StreamException {
     return paginatedFilter(
-        lookup, id, DefaultOptions.DEFAULT_FILTER, DefaultOptions.DEFAULT_LIMIT, kind);
+        lookup, id, DefaultOptions.DEFAULT_FILTER, DefaultOptions.DEFAULT_LIMIT, kind, false);
   }
 
   public CompletableFuture<Paginated<Reaction>> paginatedFilter(
       LookupKind lookup, String id, Filter filter, Limit limit) throws StreamException {
-    return paginatedFilter(lookup, id, filter, limit, "");
+    return paginatedFilter(lookup, id, filter, limit, "", false);
   }
 
   public CompletableFuture<Paginated<Reaction>> paginatedFilter(
       LookupKind lookup, String id, Limit limit, String kind) throws StreamException {
-    return paginatedFilter(lookup, id, DefaultOptions.DEFAULT_FILTER, limit, kind);
+    return paginatedFilter(lookup, id, DefaultOptions.DEFAULT_FILTER, limit, kind, false);
   }
 
   public CompletableFuture<Paginated<Reaction>> paginatedFilter(
-      LookupKind lookup, String id, Filter filter, Limit limit, String kind)
+      LookupKind lookup, String id, Filter filter, Limit limit, String kind, Boolean withOwnChildren)
       throws StreamException {
     final Token token = buildReactionsToken(secret, TokenAction.READ);
-    return reactions.paginatedFilter(token, lookup, id, filter, limit, kind);
+    return reactions.paginatedFilter(token, lookup, id, filter, limit, kind, withOwnChildren);
   }
 
   public CompletableFuture<Paginated<Reaction>> paginatedFilter(String next)
@@ -194,6 +214,21 @@ public final class ReactionsClient {
 
   public CompletableFuture<Void> delete(String id) throws StreamException {
     final Token token = buildReactionsToken(secret, TokenAction.DELETE);
-    return reactions.delete(token, id);
+    return reactions.delete(token, id, false);
+  }
+
+  public CompletableFuture<Void> delete(String id, Boolean soft) throws StreamException {
+    final Token token = buildReactionsToken(secret, TokenAction.DELETE);
+    return reactions.delete(token, id, soft);
+  }
+
+  public CompletableFuture<Void> softDelete(String id) throws StreamException {
+    final Token token = buildReactionsToken(secret, TokenAction.DELETE);
+    return reactions.delete(token, id, true);
+  }
+
+  public CompletableFuture<Void> restore(String id) throws StreamException {
+    final Token token = buildReactionsToken(secret, TokenAction.WRITE);
+    return reactions.restore(token, id);
   }
 }

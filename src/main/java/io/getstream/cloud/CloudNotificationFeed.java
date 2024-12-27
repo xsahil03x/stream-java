@@ -1,27 +1,27 @@
 package io.getstream.cloud;
 
-import static io.getstream.core.utils.Serialization.deserializeContainer;
+import static io.getstream.core.utils.Serialization.*;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.getstream.core.exceptions.StreamException;
 import io.getstream.core.http.Response;
-import io.getstream.core.models.Activity;
-import io.getstream.core.models.EnrichedActivity;
-import io.getstream.core.models.FeedID;
-import io.getstream.core.models.NotificationGroup;
+import io.getstream.core.models.*;
 import io.getstream.core.options.*;
 import io.getstream.core.utils.DefaultOptions;
 import java.io.IOException;
-import java.util.List;
 import java8.util.concurrent.CompletableFuture;
 import java8.util.concurrent.CompletionException;
 
-public final class CloudNotificationFeed extends CloudAggregatedFeed {
+public final class CloudNotificationFeed extends CloudFeed {
   CloudNotificationFeed(CloudClient client, FeedID id) {
     super(client, id);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<Activity>>> getActivities()
+  CloudNotificationFeed(CloudClient client, FeedID id, FeedSubscriber subscriber) {
+    super(client, id, subscriber);
+  }
+
+  public CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities()
       throws StreamException {
     return getActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -30,8 +30,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_MARKER);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<Activity>>> getActivities(Limit limit)
+  public CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities(Limit limit)
       throws StreamException {
     return getActivities(
         limit,
@@ -40,8 +39,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_MARKER);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<Activity>>> getActivities(Offset offset)
+  public CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities(Offset offset)
       throws StreamException {
     return getActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -50,8 +48,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_MARKER);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<Activity>>> getActivities(Filter filter)
+  public CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities(Filter filter)
       throws StreamException {
     return getActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -60,9 +57,8 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_MARKER);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<Activity>>> getActivities(ActivityMarker marker)
-      throws StreamException {
+  public CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities(
+      ActivityMarker marker) throws StreamException {
     return getActivities(
         DefaultOptions.DEFAULT_LIMIT,
         DefaultOptions.DEFAULT_OFFSET,
@@ -70,70 +66,62 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         marker);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<Activity>>> getActivities(
+  public CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities(
       Limit limit, Offset offset) throws StreamException {
     return getActivities(
         limit, offset, DefaultOptions.DEFAULT_FILTER, DefaultOptions.DEFAULT_MARKER);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<Activity>>> getActivities(
+  public CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities(
       Limit limit, Filter filter) throws StreamException {
     return getActivities(
         limit, DefaultOptions.DEFAULT_OFFSET, filter, DefaultOptions.DEFAULT_MARKER);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<Activity>>> getActivities(
+  public CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities(
       Limit limit, ActivityMarker marker) throws StreamException {
     return getActivities(
         limit, DefaultOptions.DEFAULT_OFFSET, DefaultOptions.DEFAULT_FILTER, marker);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<Activity>>> getActivities(
+  public CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities(
       Filter filter, ActivityMarker marker) throws StreamException {
     return getActivities(
         DefaultOptions.DEFAULT_LIMIT, DefaultOptions.DEFAULT_OFFSET, filter, marker);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<Activity>>> getActivities(
+  public CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities(
       Offset offset, ActivityMarker marker) throws StreamException {
     return getActivities(
         DefaultOptions.DEFAULT_LIMIT, offset, DefaultOptions.DEFAULT_FILTER, marker);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<Activity>>> getActivities(
+  public CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities(
       Limit limit, Filter filter, ActivityMarker marker) throws StreamException {
     return getActivities(limit, DefaultOptions.DEFAULT_OFFSET, filter, marker);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<Activity>>> getActivities(
+  public CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities(
       Limit limit, Offset offset, ActivityMarker marker) throws StreamException {
     return getActivities(limit, offset, DefaultOptions.DEFAULT_FILTER, marker);
   }
 
-  @Override
-  CompletableFuture<List<NotificationGroup<Activity>>> getActivities(
+  CompletableFuture<PaginatedNotificationGroup<Activity>> getActivities(
       Limit limit, Offset offset, Filter filter, ActivityMarker marker) throws StreamException {
     return getClient()
         .getActivities(getID(), limit, offset, filter, marker)
         .thenApply(
             (Response response) -> {
               try {
-                return deserializeContainer(response, NotificationGroup.class, Activity.class);
+                return deserialize(
+                    response, new TypeReference<PaginatedNotificationGroup<Activity>>() {});
               } catch (StreamException | IOException e) {
                 throw new CompletionException(e);
               }
             });
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(Class<T> type)
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(Class<T> type)
       throws StreamException {
     return getCustomActivities(
         type,
@@ -143,8 +131,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_MARKER);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(
       Class<T> type, Limit limit) throws StreamException {
     return getCustomActivities(
         type,
@@ -154,8 +141,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_MARKER);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(
       Class<T> type, Offset offset) throws StreamException {
     return getCustomActivities(
         type,
@@ -165,8 +151,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_MARKER);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(
       Class<T> type, Filter filter) throws StreamException {
     return getCustomActivities(
         type,
@@ -176,8 +161,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_MARKER);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(
       Class<T> type, ActivityMarker marker) throws StreamException {
     return getCustomActivities(
         type,
@@ -187,55 +171,47 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         marker);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(
       Class<T> type, Limit limit, Offset offset) throws StreamException {
     return getCustomActivities(
         type, limit, offset, DefaultOptions.DEFAULT_FILTER, DefaultOptions.DEFAULT_MARKER);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(
       Class<T> type, Limit limit, Filter filter) throws StreamException {
     return getCustomActivities(
         type, limit, DefaultOptions.DEFAULT_OFFSET, filter, DefaultOptions.DEFAULT_MARKER);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(
       Class<T> type, Limit limit, ActivityMarker marker) throws StreamException {
     return getCustomActivities(
         type, limit, DefaultOptions.DEFAULT_OFFSET, DefaultOptions.DEFAULT_FILTER, marker);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(
       Class<T> type, Filter filter, ActivityMarker marker) throws StreamException {
     return getCustomActivities(
         type, DefaultOptions.DEFAULT_LIMIT, DefaultOptions.DEFAULT_OFFSET, filter, marker);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(
       Class<T> type, Offset offset, ActivityMarker marker) throws StreamException {
     return getCustomActivities(
         type, DefaultOptions.DEFAULT_LIMIT, offset, DefaultOptions.DEFAULT_FILTER, marker);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(
       Class<T> type, Limit limit, Filter filter, ActivityMarker marker) throws StreamException {
     return getCustomActivities(type, limit, DefaultOptions.DEFAULT_OFFSET, filter, marker);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(
       Class<T> type, Limit limit, Offset offset, ActivityMarker marker) throws StreamException {
     return getCustomActivities(type, limit, offset, DefaultOptions.DEFAULT_FILTER, marker);
   }
 
-  @Override
-  <T> CompletableFuture<List<NotificationGroup<T>>> getCustomActivities(
+  <T> CompletableFuture<PaginatedNotificationGroup<T>> getCustomActivities(
       Class<T> type, Limit limit, Offset offset, Filter filter, ActivityMarker marker)
       throws StreamException {
     return getClient()
@@ -243,15 +219,14 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         .thenApply(
             (Response response) -> {
               try {
-                return deserializeContainer(response, NotificationGroup.class, type);
+                return deserialize(response, new TypeReference<PaginatedNotificationGroup<T>>() {});
               } catch (StreamException | IOException e) {
                 throw new CompletionException(e);
               }
             });
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities()
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities()
       throws StreamException {
     return getEnrichedActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -261,8 +236,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit) throws StreamException {
     return getEnrichedActivities(
         limit,
@@ -272,8 +246,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       EnrichmentFlags flags) throws StreamException {
     return getEnrichedActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -283,8 +256,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         flags);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Offset offset) throws StreamException {
     return getEnrichedActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -294,8 +266,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Filter filter) throws StreamException {
     return getEnrichedActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -305,8 +276,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       ActivityMarker marker) throws StreamException {
     return getEnrichedActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -316,8 +286,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit, EnrichmentFlags flags) throws StreamException {
     return getEnrichedActivities(
         limit,
@@ -327,8 +296,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         flags);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit, Offset offset) throws StreamException {
     return getEnrichedActivities(
         limit,
@@ -338,8 +306,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit, Filter filter) throws StreamException {
     return getEnrichedActivities(
         limit,
@@ -349,8 +316,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit, ActivityMarker marker) throws StreamException {
     return getEnrichedActivities(
         limit,
@@ -360,8 +326,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Offset offset, EnrichmentFlags flags) throws StreamException {
     return getEnrichedActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -371,8 +336,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         flags);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Filter filter, EnrichmentFlags flags) throws StreamException {
     return getEnrichedActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -382,8 +346,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         flags);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       ActivityMarker marker, EnrichmentFlags flags) throws StreamException {
     return getEnrichedActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -393,8 +356,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         flags);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Filter filter, ActivityMarker marker) throws StreamException {
     return getEnrichedActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -404,8 +366,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Offset offset, ActivityMarker marker) throws StreamException {
     return getEnrichedActivities(
         DefaultOptions.DEFAULT_LIMIT,
@@ -415,29 +376,25 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit, Offset offset, EnrichmentFlags flags) throws StreamException {
     return getEnrichedActivities(
         limit, offset, DefaultOptions.DEFAULT_FILTER, DefaultOptions.DEFAULT_MARKER, flags);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit, Filter filter, EnrichmentFlags flags) throws StreamException {
     return getEnrichedActivities(
         limit, DefaultOptions.DEFAULT_OFFSET, filter, DefaultOptions.DEFAULT_MARKER, flags);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit, ActivityMarker marker, EnrichmentFlags flags) throws StreamException {
     return getEnrichedActivities(
         limit, DefaultOptions.DEFAULT_OFFSET, DefaultOptions.DEFAULT_FILTER, marker, flags);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit, Filter filter, ActivityMarker marker) throws StreamException {
     return getEnrichedActivities(
         limit,
@@ -447,8 +404,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit, Offset offset, ActivityMarker marker) throws StreamException {
     return getEnrichedActivities(
         limit,
@@ -458,36 +414,31 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Filter filter, ActivityMarker marker, EnrichmentFlags flags) throws StreamException {
     return getEnrichedActivities(
         DefaultOptions.DEFAULT_LIMIT, DefaultOptions.DEFAULT_OFFSET, filter, marker, flags);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Offset offset, ActivityMarker marker, EnrichmentFlags flags) throws StreamException {
     return getEnrichedActivities(
         DefaultOptions.DEFAULT_LIMIT, offset, DefaultOptions.DEFAULT_FILTER, marker, flags);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit, Filter filter, ActivityMarker marker, EnrichmentFlags flags)
       throws StreamException {
     return getEnrichedActivities(limit, DefaultOptions.DEFAULT_OFFSET, filter, marker, flags);
   }
 
-  @Override
-  public CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  public CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit, Offset offset, ActivityMarker marker, EnrichmentFlags flags)
       throws StreamException {
     return getEnrichedActivities(limit, offset, DefaultOptions.DEFAULT_FILTER, marker, flags);
   }
 
-  @Override
-  CompletableFuture<List<NotificationGroup<EnrichedActivity>>> getEnrichedActivities(
+  CompletableFuture<PaginatedNotificationGroup<EnrichedActivity>> getEnrichedActivities(
       Limit limit, Offset offset, Filter filter, ActivityMarker marker, EnrichmentFlags flags)
       throws StreamException {
     return getClient()
@@ -495,16 +446,15 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         .thenApply(
             (Response response) -> {
               try {
-                return deserializeContainer(
-                    response, NotificationGroup.class, EnrichedActivity.class);
+                return deserialize(
+                    response, new TypeReference<PaginatedNotificationGroup<EnrichedActivity>>() {});
               } catch (StreamException | IOException e) {
                 throw new CompletionException(e);
               }
             });
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -515,8 +465,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Limit limit) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -527,8 +476,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, EnrichmentFlags flags) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -539,8 +487,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         flags);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Offset offset) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -551,8 +498,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Filter filter) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -563,8 +509,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, ActivityMarker marker) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -575,8 +520,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Limit limit, EnrichmentFlags flags) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -587,8 +531,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         flags);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Limit limit, Offset offset) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -599,8 +542,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Limit limit, Filter filter) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -611,8 +553,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Limit limit, ActivityMarker marker) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -623,8 +564,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Offset offset, EnrichmentFlags flags) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -635,8 +575,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         flags);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Filter filter, EnrichmentFlags flags) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -647,8 +586,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         flags);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, ActivityMarker marker, EnrichmentFlags flags) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -659,8 +597,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         flags);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Filter filter, ActivityMarker marker) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -671,8 +608,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Offset offset, ActivityMarker marker) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -683,30 +619,26 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Limit limit, Offset offset, EnrichmentFlags flags) throws StreamException {
     return getEnrichedCustomActivities(
         type, limit, offset, DefaultOptions.DEFAULT_FILTER, DefaultOptions.DEFAULT_MARKER, flags);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Limit limit, Filter filter, EnrichmentFlags flags) throws StreamException {
     return getEnrichedCustomActivities(
         type, limit, DefaultOptions.DEFAULT_OFFSET, filter, DefaultOptions.DEFAULT_MARKER, flags);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Limit limit, ActivityMarker marker, EnrichmentFlags flags)
       throws StreamException {
     return getEnrichedCustomActivities(
         type, limit, DefaultOptions.DEFAULT_OFFSET, DefaultOptions.DEFAULT_FILTER, marker, flags);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Limit limit, Filter filter, ActivityMarker marker) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -717,8 +649,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Limit limit, Offset offset, ActivityMarker marker) throws StreamException {
     return getEnrichedCustomActivities(
         type,
@@ -729,40 +660,35 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         DefaultOptions.DEFAULT_ENRICHMENT_FLAGS);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Filter filter, ActivityMarker marker, EnrichmentFlags flags)
       throws StreamException {
     return getEnrichedCustomActivities(
         type, DefaultOptions.DEFAULT_LIMIT, DefaultOptions.DEFAULT_OFFSET, filter, marker, flags);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Offset offset, ActivityMarker marker, EnrichmentFlags flags)
       throws StreamException {
     return getEnrichedCustomActivities(
         type, DefaultOptions.DEFAULT_LIMIT, offset, DefaultOptions.DEFAULT_FILTER, marker, flags);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Limit limit, Filter filter, ActivityMarker marker, EnrichmentFlags flags)
       throws StreamException {
     return getEnrichedCustomActivities(
         type, limit, DefaultOptions.DEFAULT_OFFSET, filter, marker, flags);
   }
 
-  @Override
-  public <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  public <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type, Limit limit, Offset offset, ActivityMarker marker, EnrichmentFlags flags)
       throws StreamException {
     return getEnrichedCustomActivities(
         type, limit, offset, DefaultOptions.DEFAULT_FILTER, marker, flags);
   }
 
-  @Override
-  <T> CompletableFuture<List<NotificationGroup<T>>> getEnrichedCustomActivities(
+  <T> CompletableFuture<PaginatedNotificationGroup<T>> getEnrichedCustomActivities(
       Class<T> type,
       Limit limit,
       Offset offset,
@@ -775,7 +701,7 @@ public final class CloudNotificationFeed extends CloudAggregatedFeed {
         .thenApply(
             (Response response) -> {
               try {
-                return deserializeContainer(response, NotificationGroup.class, type);
+                return deserialize(response, new TypeReference<PaginatedNotificationGroup<T>>() {});
               } catch (StreamException | IOException e) {
                 throw new CompletionException(e);
               }

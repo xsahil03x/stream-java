@@ -33,38 +33,75 @@ public final class CloudReactionsClient {
 
   public CompletableFuture<List<Reaction>> filter(LookupKind lookup, String id)
       throws StreamException {
-    return filter(lookup, id, DefaultOptions.DEFAULT_FILTER, DefaultOptions.DEFAULT_LIMIT, "");
+    Params params = new Params(lookup, id);
+    return filter(params);
   }
 
   public CompletableFuture<List<Reaction>> filter(LookupKind lookup, String id, Limit limit)
       throws StreamException {
-    return filter(lookup, id, DefaultOptions.DEFAULT_FILTER, limit, "");
+    Params params = new Params(lookup, id).withLimit(limit);
+    return filter(params);
   }
 
   public CompletableFuture<List<Reaction>> filter(LookupKind lookup, String id, Filter filter)
       throws StreamException {
-    return filter(lookup, id, filter, DefaultOptions.DEFAULT_LIMIT, "");
+    Params params = new Params(lookup, id).withFilter(filter);
+    return filter(params);
   }
 
   public CompletableFuture<List<Reaction>> filter(LookupKind lookup, String id, String kind)
       throws StreamException {
-    return filter(lookup, id, DefaultOptions.DEFAULT_FILTER, DefaultOptions.DEFAULT_LIMIT, kind);
+    Params params = new Params(lookup, id).withKind(kind);
+    return filter(params);
   }
 
   public CompletableFuture<List<Reaction>> filter(
       LookupKind lookup, String id, Filter filter, Limit limit) throws StreamException {
-    return filter(lookup, id, filter, limit, "");
+    Params params = new Params(lookup, id).withFilter(filter).withLimit(limit);
+    return filter(params);
   }
 
   public CompletableFuture<List<Reaction>> filter(
       LookupKind lookup, String id, Limit limit, String kind) throws StreamException {
-    return filter(lookup, id, DefaultOptions.DEFAULT_FILTER, limit, kind);
+    Params params = new Params(lookup, id).withLimit(limit).withKind(kind);
+    return filter(params);
   }
 
   public CompletableFuture<List<Reaction>> filter(
       LookupKind lookup, String id, Filter filter, Limit limit, String kind)
       throws StreamException {
-    return reactions.filter(token, lookup, id, filter, limit, kind);
+    Params params =
+        new Params(lookup, id).withLimit(limit).withKind(kind).withFilter(filter).withLimit(limit);
+    return filter(params);
+  }
+
+  public CompletableFuture<List<Reaction>> filter(
+      LookupKind lookup,
+      String id,
+      Filter filter,
+      Limit limit,
+      String kind,
+      Boolean includeOwnChildren)
+      throws StreamException {
+    Params params =
+        new Params(lookup, id)
+            .withLimit(limit)
+            .withKind(kind)
+            .withFilter(filter)
+            .withLimit(limit)
+            .includeOwnChildren(includeOwnChildren);
+    return filter(params);
+  }
+
+  private CompletableFuture<List<Reaction>> filter(Params params) throws StreamException {
+    return reactions.filter(
+        token,
+        params.getLookupKind(),
+        params.getId(),
+        params.getFilter(),
+        params.getLimit(),
+        params.getKind(),
+        params.getWithOwnChildren(), "");
   }
 
   public CompletableFuture<Reaction> add(
@@ -163,6 +200,76 @@ public final class CloudReactionsClient {
   }
 
   public CompletableFuture<Void> delete(String id) throws StreamException {
-    return reactions.delete(token, id);
+    return reactions.delete(token, id, false);
+  }
+
+  public CompletableFuture<Void> delete(String id, Boolean soft) throws StreamException {
+    return reactions.delete(token, id, soft);
+  }
+
+  public CompletableFuture<Void> softDelete(String id) throws StreamException {
+    return reactions.delete(token, id, true);
+  }
+
+  public CompletableFuture<Void> restore(String id) throws StreamException {
+    return reactions.restore(token, id);
+  }
+
+  public class Params {
+    private LookupKind lookupKind;
+    private String id;
+    private Filter filter;
+    private Limit limit;
+    private String kind;
+    private Boolean withOwnChildren;
+
+    public Params(LookupKind lookupKind, String id) {
+      this.id = id;
+      this.lookupKind = lookupKind;
+    }
+
+    public Params withLimit(Limit limit) {
+      this.limit = limit;
+      return this;
+    }
+
+    public Params withFilter(Filter filter) {
+      this.filter = filter;
+      return this;
+    }
+
+    public Params withKind(String kind) {
+      this.kind = kind;
+      return this;
+    }
+
+    public Params includeOwnChildren(Boolean includeOwnChildren) {
+      this.withOwnChildren = includeOwnChildren;
+      return this;
+    }
+
+    public LookupKind getLookupKind() {
+      return lookupKind;
+    }
+
+    public String getId() {
+      return id;
+    }
+
+    public Filter getFilter() {
+      return (filter != null) ? filter : DefaultOptions.DEFAULT_FILTER;
+    }
+
+    public Limit getLimit() {
+      return (limit != null) ? limit : DefaultOptions.DEFAULT_LIMIT;
+    }
+
+    public String getKind() {
+      return (kind != null) ? kind : "";
+    }
+
+    public Boolean getWithOwnChildren() {
+      return (withOwnChildren != null) ? withOwnChildren : false;
+    }
   }
 }

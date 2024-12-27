@@ -1,128 +1,89 @@
 plugins {
-    id "me.tatarka.retrolambda" version "3.7.1"
     id 'java-library'
-    id 'eclipse'
-    id 'idea'
-    id 'maven-publish'
-    id 'signing'
-    id "com.prot.versioninfo" version "0.5"
+    id 'io.github.gradle-nexus.publish-plugin' version '1.1.0'
     id 'com.diffplug.spotless' version '5.14.0'
 }
 
 group 'io.getstream.client'
-version = '3.2.4'
+version = '3.15.1'
+description = 'Stream Feeds official Java SDK'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url "https://plugins.gradle.org/m2/" }
+    maven { url uri('https://repo.maven.apache.org/maven2/') }
+}
+
+var jackson_version = '2.14.2'
 
 dependencies {
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
-
-    testImplementation 'junit:junit:4.12'
+    java {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+    }
+    
+    testImplementation 'junit:junit:4.13.1'
     testImplementation 'com.pholser:junit-quickcheck-core:0.8.1'
     testImplementation 'com.pholser:junit-quickcheck-generators:0.8.1'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.2.0'
 
-    implementation 'com.google.guava:guava:20.0'
-    implementation 'com.squareup.okhttp3:okhttp:3.11.0'
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.9.10'
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.9.10'
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.9.10'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.10'
-    implementation 'com.auth0:java-jwt:3.4.0'
+    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    implementation "com.fasterxml.jackson.core:jackson-core:$jackson_version"
+    implementation "com.fasterxml.jackson.core:jackson-core:$jackson_version"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:$jackson_version"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jackson_version"
+    implementation 'com.auth0:java-jwt:4.2.2'
 
     api 'net.sourceforge.streamsupport:streamsupport:1.7.0'
     api 'net.sourceforge.streamsupport:streamsupport-cfuture:1.7.0'
 }
 
-retrolambda {
-    javaVersion JavaVersion.VERSION_1_7
-}
-
-spotless {
-    java {
-        googleJavaFormat()
-    }
+def localProperties = new Properties()
+def localPropertiesFile = project.rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    FileInputStream stream = new FileInputStream(localPropertiesFile)
+    localProperties.load(stream)
 }
 
 test {
+    useJUnitPlatform()
+
     testLogging {
         exceptionFormat = 'full'
         events 'standard_out', 'standard_error', "passed", "skipped", "failed"
     }
-}
 
-repositories {
-    jcenter()
-}
-
-processResources {
-    filesMatching('stream-java2.info') {
-        expand(project.properties)
-    }
-}
-
-task sourcesJar(type: Jar) {
-    from sourceSets.main.allJava
-    classifier = 'sources'
-}
-
-task javadocJar(type: Jar) {
-    from javadoc
-    classifier = 'javadoc'
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifactId = 'stream-java'
-            from components.java
-            artifact sourcesJar
-            artifact javadocJar
-
-            pom {
-                name = 'client'
-                description = 'Stream API official client'
-                url = 'https://github.com/GetStream/stream-java'
-
-                scm {
-                    url = 'scm:git@github.com:GetStream/stream-java.git'
-                    connection = 'scm:git@github.com:GetStream/stream-java.git'
-                    developerConnection = 'scm:git@github.com:GetStream/stream-java.git'
-                }
-
-                licenses {
-                    license {
-                        name = 'The 3-Clause BSD License'
-                        url = 'https://opensource.org/licenses/BSD-3-Clause'
-                        distribution = 'repo'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id = 'GetStream'
-                        name = 'Stream Developers'
-                    }
-                }
-            }
-        }
-    }
-    repositories {
-        maven {
-            url 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-            credentials {
-                username = hasProperty('sonatypeUsername') ? sonatypeUsername : System.getenv('sonatypeUsername')
-                password = hasProperty('sonatypePassword') ? sonatypePassword : System.getenv('sonatypePassword')
-            }
+    doFirst {
+        // Inject local properties into tests runtime system properties
+        for (String key : localProperties.stringPropertyNames) {
+            systemProperty key, localProperties.getProperty(key).toString()
         }
     }
 }
 
-signing {
-    sign publishing.publications.mavenJava
-}
+def generatedVersionDir = "${buildDir}/generated-version"
 
-javadoc {
-    if (JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption('html5', true)
+sourceSets {
+    main {
+        output.dir(generatedVersionDir, builtBy: 'generateVersionProperties')
     }
 }
+/*spotless {
+    java {
+        googleJavaFormat()
+    }
+}*/
+task generateVersionProperties {
+    doLast {
+        def propertiesFile = file "$generatedVersionDir/version.properties"
+        propertiesFile.parentFile.mkdirs()
+        def properties = new Properties()
+        properties.setProperty("version", rootProject.version.toString())
+        propertiesFile.withWriter { properties.store(it, null) }
+    }
+}
+processResources.dependsOn generateVersionProperties
+
+apply from: "publish.gradle"

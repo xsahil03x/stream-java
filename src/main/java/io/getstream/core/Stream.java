@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,10 @@ public final class Stream {
 
   public StreamReactions reactions() {
     return new StreamReactions(key, baseURL, httpClient);
+  }
+
+  public Moderation moderation() {
+    return new Moderation(key, baseURL, httpClient);
   }
 
   public StreamFiles files() {
@@ -372,6 +377,34 @@ public final class Stream {
     }
   }
 
+  public CompletableFuture<Response> getFollowStats(
+      Token token,
+      FeedID feed,
+      String[] followerSlugs,
+      String[] followingSlugs,
+      RequestOption... options)
+      throws StreamException {
+    try {
+      final URL url = followStatsPath(baseURL);
+      final List<CustomQueryParameter> params = new ArrayList<>(4);
+      final String feedId = String.join(":", feed.getSlug(), feed.getUserID());
+      params.add(new CustomQueryParameter("followers", feedId));
+      params.add(new CustomQueryParameter("following", feedId));
+
+      if (followerSlugs != null && followerSlugs.length > 0) {
+        params.add(new CustomQueryParameter("followers_slugs", String.join(",", followerSlugs)));
+      }
+      if (followingSlugs != null && followingSlugs.length > 0) {
+        params.add(new CustomQueryParameter("following_slugs", String.join(",", followingSlugs)));
+      }
+
+      return httpClient.execute(
+          buildGet(url, key, token, params.toArray(new CustomQueryParameter[0])));
+    } catch (MalformedURLException | URISyntaxException e) {
+      throw new StreamException(e);
+    }
+  }
+
   public CompletableFuture<Response> updateActivityToTargets(
       Token token, FeedID feed, Activity activity, FeedID[] add, FeedID[] remove, FeedID[] replace)
       throws StreamException {
@@ -489,6 +522,53 @@ public final class Stream {
       final URL url = buildUsersURL(baseURL, userID + '/');
       return httpClient.execute(buildPut(url, key, token, payload));
     } catch (JsonProcessingException | MalformedURLException | URISyntaxException e) {
+      throw new StreamException(e);
+    }
+  }
+
+  public CompletableFuture<Object> deleteActivities(Token token, BatchDeleteActivitiesRequest request) throws StreamException {
+    try {
+      final URL url = deleteActivitiesURL(baseURL);
+      final byte[] payload = toJSON(request);
+      io.getstream.core.http.Request httpRequest = buildPost(url, key, token, payload);
+      return httpClient.execute(httpRequest).thenApply(response -> null);
+    } catch (Exception e) {
+      throw new StreamException(e);
+    }
+  }
+
+  public CompletableFuture<Object> deleteReactions(Token token, BatchDeleteReactionsRequest request) throws StreamException {
+    try {
+
+      final URL url = deleteReactionsURL(baseURL);
+      final byte[] payload = toJSON(request);
+      io.getstream.core.http.Request httpRequest = buildPost(url, key, token, payload);
+
+      return httpClient.execute(httpRequest).thenApply(response -> null);
+    } catch (Exception e) {
+      throw new StreamException(e);
+    }
+  }
+
+  public CompletableFuture<ExportIDsResponse> exportUserActivities(Token token, String userId) throws StreamException {
+    if (userId == null || userId.isEmpty()) {
+      throw new IllegalArgumentException("User ID can't be null or empty");
+    }
+
+    try {
+      final URL url = buildExportIDsURL(baseURL, userId);
+      io.getstream.core.http.Request request = buildGet(url, key, token);
+      return httpClient
+              .execute(request)
+              .thenApply(
+                      response -> {
+                        try {
+                          return deserialize(response, ExportIDsResponse.class);
+                        } catch (StreamException | IOException e) {
+                          throw new CompletionException(e);
+                        }
+                      });
+    } catch (MalformedURLException | URISyntaxException e) {
       throw new StreamException(e);
     }
   }

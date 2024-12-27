@@ -19,6 +19,8 @@ import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import io.getstream.core.utils.Auth;
 import java8.util.concurrent.CompletableFuture;
 
 public final class Client {
@@ -250,6 +252,10 @@ public final class Client {
     return new ReactionsClient(secret, stream.reactions());
   }
 
+  public ModerationClient moderation() {
+    return new ModerationClient(secret, stream.moderation());
+  }
+
   public FileStorageClient files() {
     return new FileStorageClient(secret, stream.files());
   }
@@ -317,6 +323,12 @@ public final class Client {
     return stream.unfollow(token, source, target, options);
   }
 
+  CompletableFuture<Response> getFollowStats(
+      FeedID feed, String[] followerSlugs, String[] followingSlugs) throws StreamException {
+    final Token token = buildFollowToken(secret, TokenAction.READ);
+    return stream.getFollowStats(token, feed, followerSlugs, followingSlugs);
+  }
+
   CompletableFuture<Response> updateActivityToTargets(
       FeedID feed, Activity activity, FeedID[] add, FeedID[] remove, FeedID[] newTargets)
       throws StreamException {
@@ -352,5 +364,20 @@ public final class Client {
   CompletableFuture<Response> userProfile(String id) throws StreamException {
     final Token token = buildUsersToken(secret, TokenAction.READ);
     return stream.getUser(token, id, true);
+  }
+
+  public CompletableFuture<Object> deleteActivities(BatchDeleteActivitiesRequest request) throws StreamException {
+    final Token token = buildDataPrivacyToken(secret, Auth.TokenAction.WRITE);
+    return stream.deleteActivities(token, request);
+  }
+
+  public CompletableFuture<Object> deleteReactions(BatchDeleteReactionsRequest request) throws StreamException {
+    final Token token = buildDataPrivacyToken(secret, Auth.TokenAction.WRITE);
+    return stream.deleteReactions(token, request);
+  }
+
+  public CompletableFuture<ExportIDsResponse> exportUserActivities(String userId) throws StreamException {
+    final Token token = buildDataPrivacyToken(secret, Auth.TokenAction.READ);
+    return stream.exportUserActivities(token, userId);
   }
 }

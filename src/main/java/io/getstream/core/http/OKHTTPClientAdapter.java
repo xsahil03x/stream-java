@@ -62,7 +62,8 @@ public final class OKHTTPClientAdapter extends HTTPClient {
             .url(request.getURL())
             .addHeader("Stream-Auth-Type", "jwt")
             .addHeader("Authorization", request.getToken().toString())
-            .addHeader("User-Agent", userAgent);
+            .addHeader("User-Agent", userAgent)
+            .addHeader("X-Stream-Client", "stream-java-" + version);
 
     MediaType mediaType;
     switch (request.getMethod()) {
@@ -103,8 +104,8 @@ public final class OKHTTPClientAdapter extends HTTPClient {
 
               @Override
               public void onResponse(Call call, okhttp3.Response response) {
-                io.getstream.core.http.Response httpResponse = buildResponse(response);
-                try (InputStream ignored = httpResponse.getBody()) {
+                try {
+                  io.getstream.core.http.Response httpResponse = buildResponse(response);
                   result.complete(httpResponse);
                 } catch (Exception e) {
                   result.completeExceptionally(e);
